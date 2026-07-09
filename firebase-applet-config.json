@@ -1,11 +1,10 @@
 {
-  "projectId": "gothic-hue-whnbb",
-  "appId": "1:935696434929:web:d832a3ec88519353d2cb50",
-  "apiKey": "AIzaSyCMssGbXpJST1pZT5JeKnTBj8gZN2QcR0A",
-  "authDomain": "gothic-hue-whnbb.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-jewelryorderdash-8794a446-141c-4a37-b19b-048bced4663f",
-  "storageBucket": "gothic-hue-whnbb.firebasestorage.app",
-  "messagingSenderId": "935696434929",
-  "measurementId": "",
-  "oAuthClientId": "935696434929-olm3t729qrbovnohajq0op8hjakt3bpt.apps.googleusercontent.com"
+  "projectId": "topalogluerp",
+  "appId": "1:637219320053:web:432a0a7e1b6f44fcdd55bc",
+  "apiKey": "AIzaSyDHrYKFsaFOGAHAL6ldyEsw4yasquThnlo",
+  "authDomain": "topalogluerp.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "topalogluerp.firebasestorage.app",
+  "messagingSenderId": "637219320053",
+  "measurementId": "G-QRZ9H2FD89"
 }

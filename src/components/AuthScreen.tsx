@@ -9,9 +9,13 @@ export const AuthScreen: React.FC = () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      alert('Giriş yapılırken bir hata oluştu.');
+      if (error.code === 'auth/unauthorized-domain') {
+        alert('Bu alan adı (domain) henüz Firebase üzerinde yetkilendirilmemiş. Lütfen Firebase Console -> Authentication -> Settings -> Authorized domains kısmından bu domaini ekleyin.');
+      } else {
+        alert('Giriş yapılırken bir hata oluştu.');
+      }
     }
   };
 
