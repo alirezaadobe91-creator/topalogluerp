@@ -9,9 +9,7 @@ import {
   Settings, 
   Plus,
   LayoutDashboard,
-  ListOrdered,
-  LogOut,
-  Loader2
+  ListOrdered
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from './services/db';
@@ -24,12 +22,8 @@ import { OrderDetailPanel } from './components/OrderDetailPanel';
 import { DashboardCharts } from './components/DashboardCharts';
 import { isToday, format } from 'date-fns';
 import { clsx } from 'clsx';
-import { useAuth } from './hooks/useAuth';
-import { AuthScreen } from './components/AuthScreen';
-import { AlertCircle } from 'lucide-react';
 
 export default function App() {
-  const { user, loading: authLoading, signOut } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('HEPSİ');
@@ -40,38 +34,15 @@ export default function App() {
   const [erpFilter, setErpFilter] = useState<'ALL' | 'PROCESSED' | 'PENDING'>('ALL');
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('HEPSİ');
 
-  // Load Initial Data & Subscribe
-  const [error, setError] = useState<string | null>(null);
-
+  // Load Initial Data
   useEffect(() => {
-    if (!user) return;
-    
-    let isMounted = true;
-
-    // Safety timeout: 8 saniye içinde veri gelmezse loading ekranından çık
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && !isInitialized) {
-        console.warn('Initialization safety timeout reached');
-        setIsInitialized(true);
-      }
-    }, 8000);
-
-    // Gerçek zamanlı veri takibi
-    const unsubscribe = dbService.subscribeToOrders((data) => {
-      if (isMounted) {
-        setOrders(data);
-        setIsInitialized(true);
-        setError(null);
-        clearTimeout(safetyTimeout);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-      clearTimeout(safetyTimeout);
+    const init = async () => {
+      const data = await dbService.getAllOrders();
+      setOrders(data);
+      setIsInitialized(true);
     };
-  }, [user]);
+    init();
+  }, []);
 
   // Force Light Theme
   useEffect(() => {
@@ -94,25 +65,6 @@ export default function App() {
   }, [orders]);
 
   // Filtered Orders
-  // Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        alert('Veriler otomatik olarak kaydedilmektedir.');
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        document.querySelector<HTMLInputElement>('input[placeholder="Hızlı Arama..."]')?.focus();
-      }
-      if (e.key === 'Escape') {
-        setSelectedOrder(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const filteredOrders = useMemo(() => {
     const statusMap: Record<string, string> = {
       'HEPSİ': 'ALL',
@@ -144,99 +96,56 @@ export default function App() {
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [orders, searchQuery, statusFilter, erpFilter, marketplaceFilter]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-gold" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthScreen />;
-  }
-
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-gold" />
-      </div>
-    );
-  }
-
   // Actions
   const handleAddOrder = async (order: Order) => {
-    if (!user) return;
-    try {
-      await dbService.saveOrder(order, user.uid);
-      const data = await dbService.getAllOrders();
-      setOrders(data);
-    } catch (err: any) {
-      console.error('Sipariş kaydedilirken hata:', err);
-      alert(`Sipariş kaydedilemedi: ${err.message}`);
-    }
+    await dbService.saveOrder(order);
+    setOrders(prev => [order, ...prev]);
   };
 
   const handleDeleteOrder = async (id: string) => {
-    if (!user) return;
-    if (!confirm('Bu siparişi silmek istediğinize emin misiniz?')) return;
-    try {
-      await dbService.deleteOrder(id);
-      const data = await dbService.getAllOrders();
-      setOrders(data);
-      if (selectedOrder?.id === id) setSelectedOrder(null);
-    } catch (err: any) {
-      console.error('Sipariş silinirken hata:', err);
-      alert(`Sipariş silinemedi: ${err.message}`);
-    }
+    await dbService.deleteOrder(id);
+    setOrders(prev => prev.filter(o => o.id !== id));
+    if (selectedOrder?.id === id) setSelectedOrder(null);
   };
 
   const handleUpdateOrder = async (id: string, updates: Partial<Order>) => {
-    if (!user) return;
     const order = orders.find(o => o.id === id);
     if (!order) return;
 
-    try {
-      let newStatus = updates.status || order.status;
-      let newProgress = order.progress;
+    let newStatus = updates.status || order.status;
+    let newProgress = order.progress;
 
-      if (updates.status) {
-        const statusOrder = [
-          OrderStatus.PENDING,
-          OrderStatus.WORKSHOP,
-          OrderStatus.SHIPPED,
-          OrderStatus.DELIVERED
-        ];
-        
-        if (newStatus !== OrderStatus.CANCELLED) {
-          const idx = statusOrder.indexOf(newStatus);
-          newProgress = idx === -1 ? 0 : Math.round(((idx + 1) / statusOrder.length) * 100);
-        }
+    if (updates.status) {
+      const statusOrder = [
+        OrderStatus.PENDING,
+        OrderStatus.WORKSHOP,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED
+      ];
+      
+      if (newStatus !== OrderStatus.CANCELLED) {
+        const idx = statusOrder.indexOf(newStatus);
+        newProgress = idx === -1 ? 0 : Math.round(((idx + 1) / statusOrder.length) * 100);
       }
-
-      const updatedOrder: Order = {
-        ...order,
-        ...updates,
-        progress: newProgress,
-        updatedAt: Date.now(),
-        history: updates.status ? [
-          ...order.history,
-          { status: newStatus, timestamp: Date.now() }
-        ] : order.history
-      };
-
-      await dbService.saveOrder(updatedOrder, user.uid);
-      const data = await dbService.getAllOrders();
-      setOrders(data);
-      if (selectedOrder?.id === id) setSelectedOrder(updatedOrder);
-    } catch (err: any) {
-      console.error('Sipariş güncellenirken hata:', err);
-      alert(`Sipariş güncellenemedi: ${err.message}`);
     }
+
+    const updatedOrder: Order = {
+      ...order,
+      ...updates,
+      progress: newProgress,
+      updatedAt: Date.now(),
+      history: updates.status ? [
+        ...order.history,
+        { status: newStatus, timestamp: Date.now() }
+      ] : order.history
+    };
+
+    await dbService.saveOrder(updatedOrder);
+    setOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+    if (selectedOrder?.id === id) setSelectedOrder(updatedOrder);
   };
 
   const handleExport = async (type: 'json' | 'csv' | 'print') => {
-    if (!user) return;
     if (type === 'json') {
       const data = await dbService.exportToJSON();
       const blob = new Blob([data], { type: 'application/json' });
@@ -261,6 +170,27 @@ export default function App() {
     }
   };
 
+  // Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        alert('Veriler otomatik olarak kaydedilmektedir.');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('input[placeholder="Hızlı Arama..."]')?.focus();
+      }
+      if (e.key === 'Escape') {
+        setSelectedOrder(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  if (!isInitialized) return null;
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 selection:bg-gold/30">
       {/* Header */}
@@ -283,18 +213,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end mr-2 hidden sm:flex">
-              <span className="text-[10px] font-black text-slate-900 tracking-tight uppercase">{user?.displayName || 'Kullanıcı'}</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{user?.email}</span>
-            </div>
-            <button 
-              onClick={() => signOut()}
-              className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100 mr-2"
-              title="Çıkış Yap"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-4">
             <div className="relative group hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 

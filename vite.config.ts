@@ -6,9 +6,6 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.FIREBASE_CONFIG': JSON.stringify(process.env.FIREBASE_CONFIG),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

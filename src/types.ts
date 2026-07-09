@@ -38,7 +38,6 @@ export interface Order {
   erpProcessed: boolean;
   progress: number;
   history: OrderHistory[];
-  userId: string;
 }
 
 export type Theme = 'light' | 'dark';
