@@ -1,6 +1,6 @@
 {
-  "name": "Jewelry Order Dashboard",
-  "description": "A premium, professional order tracking system for jewelry e-commerce with IndexedDB persistence, advanced analytics, and a modern SaaS interface.",
+  "name": "TOPALOGLU ERP",
+  "description": "A premium, professional order tracking system for jewelry e-commerce with real-time cloud synchronization, advanced analytics, and a modern SaaS interface.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

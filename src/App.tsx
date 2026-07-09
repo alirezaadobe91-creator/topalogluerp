@@ -40,22 +40,17 @@ export default function App() {
   const [erpFilter, setErpFilter] = useState<'ALL' | 'PROCESSED' | 'PENDING'>('ALL');
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('HEPSİ');
 
-  // Load Initial Data
+  // Load Initial Data & Subscribe
   useEffect(() => {
     if (!user) return;
-    const init = async () => {
-      try {
-        const data = await dbService.getAllOrders(user.uid);
-        setOrders(data);
-        setIsInitialized(true);
-      } catch (err: any) {
-        console.error('Veri yüklenirken hata:', err);
-        // Hata durumunda da initialized set ediyoruz ki sonsuz loading'de kalmasın
-        setIsInitialized(true);
-        alert('Veriler yüklenirken bir hata oluştu.');
-      }
-    };
-    init();
+    
+    // Gerçek zamanlı veri takibi
+    const unsubscribe = dbService.subscribeToOrders(user.uid, (data) => {
+      setOrders(data);
+      setIsInitialized(true);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   // Force Light Theme
@@ -129,7 +124,7 @@ export default function App() {
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [orders, searchQuery, statusFilter, erpFilter, marketplaceFilter]);
 
-  if (authLoading || !isInitialized) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-gold" />
@@ -139,6 +134,14 @@ export default function App() {
 
   if (!user) {
     return <AuthScreen />;
+  }
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-gold" />
+      </div>
+    );
   }
 
   // Actions

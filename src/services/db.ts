@@ -66,6 +66,21 @@ export class DatabaseService {
     }
   }
 
+  subscribeToOrders(userId: string, callback: (orders: Order[]) => void) {
+    const q = query(
+      collection(db, this.collectionName),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map(doc => doc.data() as Order);
+      callback(orders);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, this.collectionName);
+    });
+  }
+
   async saveOrder(order: Order, userId: string): Promise<void> {
     const orderWithUserId = { ...order, userId, updatedAt: Date.now() };
     const docRef = doc(db, this.collectionName, order.id);

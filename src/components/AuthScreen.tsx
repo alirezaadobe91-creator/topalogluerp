@@ -1,7 +1,7 @@
 import React from 'react';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { LogIn, Diamond } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const AuthScreen: React.FC = () => {
@@ -22,11 +22,18 @@ export const AuthScreen: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-8 text-center"
       >
-        <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Diamond className="w-8 h-8 text-gold" />
+        <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 p-2 shadow-sm border border-slate-100">
+          <img 
+            src="/logo/black-logo.png" 
+            alt="Logo" 
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=TOPALOGLU&background=C5A059&color=fff';
+            }}
+          />
         </div>
         
-        <h1 className="text-2xl font-black text-slate-900 mb-2">Jewelry ERP</h1>
+        <h1 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">TOPALOGLU ERP</h1>
         <p className="text-slate-500 mb-8 text-sm">
           Siparişlerinizi her yerden yönetmek için giriş yapın.
         </p>
