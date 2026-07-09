@@ -41,24 +41,27 @@ export default function App() {
   const [marketplaceFilter, setMarketplaceFilter] = useState<string>('HEPSİ');
 
   // Load Initial Data & Subscribe
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
     
     let isMounted = true;
 
-    // Safety timeout: 5 saniye içinde veri gelmezse loading ekranından çık
+    // Safety timeout: 8 saniye içinde veri gelmezse loading ekranından çık
     const safetyTimeout = setTimeout(() => {
       if (isMounted && !isInitialized) {
         console.warn('Initialization safety timeout reached');
         setIsInitialized(true);
       }
-    }, 5000);
+    }, 8000);
 
     // Gerçek zamanlı veri takibi
     const unsubscribe = dbService.subscribeToOrders((data) => {
       if (isMounted) {
         setOrders(data);
         setIsInitialized(true);
+        setError(null);
         clearTimeout(safetyTimeout);
       }
     });

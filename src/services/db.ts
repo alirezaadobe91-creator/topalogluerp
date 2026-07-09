@@ -76,7 +76,7 @@ export class DatabaseService {
       callback(orders);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, this.collectionName, false);
-      callback([]); // Error durumunda boş liste dön ki loading takılı kalmasın
+      // Don't force empty list immediately on error to allow retry/timeout logic
     });
   }
 
