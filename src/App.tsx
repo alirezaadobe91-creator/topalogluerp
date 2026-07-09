@@ -44,13 +44,30 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     
+    let isMounted = true;
+
+    // Safety timeout: 5 saniye içinde veri gelmezse loading ekranından çık
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && !isInitialized) {
+        console.warn('Initialization safety timeout reached');
+        setIsInitialized(true);
+      }
+    }, 5000);
+
     // Gerçek zamanlı veri takibi
     const unsubscribe = dbService.subscribeToOrders(user.uid, (data) => {
-      setOrders(data);
-      setIsInitialized(true);
+      if (isMounted) {
+        setOrders(data);
+        setIsInitialized(true);
+        clearTimeout(safetyTimeout);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, [user]);
 
   // Force Light Theme

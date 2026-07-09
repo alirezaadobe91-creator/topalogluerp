@@ -32,7 +32,7 @@ interface FirestoreErrorInfo {
   }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null, shouldThrow = true) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -44,7 +44,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  if (shouldThrow) {
+    throw new Error(JSON.stringify(errInfo));
+  }
 }
 
 export class DatabaseService {
@@ -53,8 +55,7 @@ export class DatabaseService {
   async getAllOrders(userId: string): Promise<Order[]> {
     const q = query(
       collection(db, this.collectionName),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
 
     try {
@@ -69,15 +70,15 @@ export class DatabaseService {
   subscribeToOrders(userId: string, callback: (orders: Order[]) => void) {
     const q = query(
       collection(db, this.collectionName),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
 
     return onSnapshot(q, (snapshot) => {
       const orders = snapshot.docs.map(doc => doc.data() as Order);
       callback(orders);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, this.collectionName);
+      handleFirestoreError(error, OperationType.LIST, this.collectionName, false);
+      callback([]); // Error durumunda boş liste dön ki loading takılı kalmasın
     });
   }
 
