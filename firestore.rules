@@ -36,10 +36,7 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming()) && incoming().id == orderId;
-      allow read: if isSignedIn() && existing().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidOrder(incoming()) && existing().userId == request.auth.uid && incoming().userId == existing().userId;
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow read, write: if isSignedIn();
     }
   }
 }

@@ -55,7 +55,7 @@ export default function App() {
     }, 5000);
 
     // Gerçek zamanlı veri takibi
-    const unsubscribe = dbService.subscribeToOrders(user.uid, (data) => {
+    const unsubscribe = dbService.subscribeToOrders((data) => {
       if (isMounted) {
         setOrders(data);
         setIsInitialized(true);
@@ -166,7 +166,7 @@ export default function App() {
     if (!user) return;
     try {
       await dbService.saveOrder(order, user.uid);
-      const data = await dbService.getAllOrders(user.uid);
+      const data = await dbService.getAllOrders();
       setOrders(data);
     } catch (err: any) {
       console.error('Sipariş kaydedilirken hata:', err);
@@ -179,7 +179,7 @@ export default function App() {
     if (!confirm('Bu siparişi silmek istediğinize emin misiniz?')) return;
     try {
       await dbService.deleteOrder(id);
-      const data = await dbService.getAllOrders(user.uid);
+      const data = await dbService.getAllOrders();
       setOrders(data);
       if (selectedOrder?.id === id) setSelectedOrder(null);
     } catch (err: any) {
@@ -223,7 +223,7 @@ export default function App() {
       };
 
       await dbService.saveOrder(updatedOrder, user.uid);
-      const data = await dbService.getAllOrders(user.uid);
+      const data = await dbService.getAllOrders();
       setOrders(data);
       if (selectedOrder?.id === id) setSelectedOrder(updatedOrder);
     } catch (err: any) {
@@ -235,7 +235,7 @@ export default function App() {
   const handleExport = async (type: 'json' | 'csv' | 'print') => {
     if (!user) return;
     if (type === 'json') {
-      const data = await dbService.exportToJSON(user.uid);
+      const data = await dbService.exportToJSON();
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

@@ -52,10 +52,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export class DatabaseService {
   private collectionName = 'orders';
 
-  async getAllOrders(userId: string): Promise<Order[]> {
+  async getAllOrders(): Promise<Order[]> {
     const q = query(
-      collection(db, this.collectionName),
-      where('userId', '==', userId)
+      collection(db, this.collectionName)
     );
 
     try {
@@ -67,10 +66,9 @@ export class DatabaseService {
     }
   }
 
-  subscribeToOrders(userId: string, callback: (orders: Order[]) => void) {
+  subscribeToOrders(callback: (orders: Order[]) => void) {
     const q = query(
-      collection(db, this.collectionName),
-      where('userId', '==', userId)
+      collection(db, this.collectionName)
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -82,8 +80,8 @@ export class DatabaseService {
     });
   }
 
-  async saveOrder(order: Order, userId: string): Promise<void> {
-    const orderWithUserId = { ...order, userId, updatedAt: Date.now() };
+  async saveOrder(order: Order, userId?: string): Promise<void> {
+    const orderWithUserId = { ...order, userId: userId || order.userId, updatedAt: Date.now() };
     const docRef = doc(db, this.collectionName, order.id);
 
     try {
@@ -103,9 +101,9 @@ export class DatabaseService {
     }
   }
 
-  async clearAll(userId: string): Promise<void> {
+  async clearAll(): Promise<void> {
     try {
-      const orders = await this.getAllOrders(userId);
+      const orders = await this.getAllOrders();
       for (const order of orders) {
         await this.deleteOrder(order.id);
       }
@@ -115,12 +113,12 @@ export class DatabaseService {
   }
 
   // Backup & Restore
-  async exportToJSON(userId: string): Promise<string> {
-    const orders = await this.getAllOrders(userId);
+  async exportToJSON(): Promise<string> {
+    const orders = await this.getAllOrders();
     return JSON.stringify(orders, null, 2);
   }
 
-  async importFromJSON(json: string, userId: string): Promise<void> {
+  async importFromJSON(json: string, userId?: string): Promise<void> {
     try {
       const importedOrders: Order[] = JSON.parse(json);
       for (const order of importedOrders) {
