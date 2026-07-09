@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-gold: #D4AF37;
+  --color-charcoal: #121212;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased transition-colors duration-300;
+  }
+}
+
+@utility glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/40;
+}
+
+@utility glass-card {
+  @apply glass rounded-2xl shadow-xl shadow-slate-200/50;
+}
+
+@utility gold-button {
+  @apply bg-gold text-white hover:bg-gold/90 transition-all active:scale-95 shadow-lg shadow-gold/20 font-bold;
+}
+
+@utility status-badge {
+  @apply px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5;
+}
+
+@layer utilities {
+  .bg-marketplace-etopaloglu {
+    background: linear-gradient(135deg, #fff1f1 0%, #ffcaca 100%);
+    border: 1px solid #ff9999;
+  }
+  .bg-marketplace-hepsiburada {
+    background: linear-gradient(135deg, #fff8f0 0%, #ffd8a8 100%);
+    border: 1px solid #ffbf66;
+  }
+  .bg-marketplace-trendyol {
+    background: linear-gradient(135deg, #fff4e6 0%, #ffcc99 100%);
+    border: 1px solid #ffa64d;
+  }
+  .bg-marketplace-n11 {
+    background: linear-gradient(135deg, #f3f0ff 0%, #e5dbff 100%);
+    border: 1px solid #b191ff;
+  }
+  .bg-marketplace-pazarama {
+    background: linear-gradient(135deg, #fff0f6 0%, #ffcce0 100%);
+    border: 1px solid #ff80b3;
+  }
+  .bg-marketplace-idefix {
+    background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+    border: 1px solid #74c0ff;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors;
+}
+
