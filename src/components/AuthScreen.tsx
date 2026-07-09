@@ -12,7 +12,8 @@ export const AuthScreen: React.FC = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.code === 'auth/unauthorized-domain') {
-        alert('Bu alan adı (domain) henüz Firebase üzerinde yetkilendirilmemiş. Lütfen Firebase Console -> Authentication -> Settings -> Authorized domains kısmından bu domaini ekleyin.');
+        const currentDomain = window.location.hostname;
+        alert(`Bu alan adı (${currentDomain}) henüz Firebase üzerinde yetkilendirilmemiş.\n\nLütfen Firebase Console -> Authentication -> Settings -> Authorized domains kısmına giderek şu domainleri ekleyin:\n\n1. ${currentDomain}\n2. topalogluerp-production-e86b.up.railway.app`);
       } else {
         alert('Giriş yapılırken bir hata oluştu.');
       }
