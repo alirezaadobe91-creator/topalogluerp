@@ -1,49 +1,101 @@
 import { Order } from '../types';
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  setDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy,
+  onSnapshot
+} from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export class DatabaseService {
-  private storageKey = 'orders_db';
-
-  private getOrdersFromStorage(): Order[] {
-    const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private saveOrdersToStorage(orders: Order[]): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(orders));
-  }
+  private collectionName = 'orders';
 
   async getAllOrders(userId: string): Promise<Order[]> {
-    // Filter by userId if you want, but for localStorage usually we just show everything for the device
-    // or filter if multiple users share the same browser local storage (unlikely but good for consistency)
-    const orders = this.getOrdersFromStorage();
-    return orders.filter(o => o.userId === userId);
+    const q = query(
+      collection(db, this.collectionName),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    try {
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => doc.data() as Order);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, this.collectionName);
+      return [];
+    }
   }
 
   async saveOrder(order: Order, userId: string): Promise<void> {
-    const orders = this.getOrdersFromStorage();
-    const index = orders.findIndex(o => o.id === order.id);
-    
-    const orderWithUserId = { ...order, userId };
+    const orderWithUserId = { ...order, userId, updatedAt: Date.now() };
+    const docRef = doc(db, this.collectionName, order.id);
 
-    if (index !== -1) {
-      orders[index] = orderWithUserId;
-    } else {
-      orders.push(orderWithUserId);
+    try {
+      await setDoc(docRef, orderWithUserId);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `${this.collectionName}/${order.id}`);
     }
-
-    this.saveOrdersToStorage(orders);
   }
 
   async deleteOrder(id: string): Promise<void> {
-    let orders = this.getOrdersFromStorage();
-    orders = orders.filter(o => o.id !== id);
-    this.saveOrdersToStorage(orders);
+    const docRef = doc(db, this.collectionName, id);
+
+    try {
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `${this.collectionName}/${id}`);
+    }
   }
 
   async clearAll(userId: string): Promise<void> {
-    let orders = this.getOrdersFromStorage();
-    orders = orders.filter(o => o.userId !== userId);
-    this.saveOrdersToStorage(orders);
+    try {
+      const orders = await this.getAllOrders(userId);
+      for (const order of orders) {
+        await this.deleteOrder(order.id);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, this.collectionName);
+    }
   }
 
   // Backup & Restore
@@ -53,14 +105,15 @@ export class DatabaseService {
   }
 
   async importFromJSON(json: string, userId: string): Promise<void> {
-    const importedOrders: Order[] = JSON.parse(json);
-    const existingOrders = this.getOrdersFromStorage();
-    
-    // Merge or overwrite? Let's overwrite for this specific userId
-    const otherUsersOrders = existingOrders.filter(o => o.userId !== userId);
-    const updatedOrders = [...otherUsersOrders, ...importedOrders.map(o => ({ ...o, userId }))];
-    
-    this.saveOrdersToStorage(updatedOrders);
+    try {
+      const importedOrders: Order[] = JSON.parse(json);
+      for (const order of importedOrders) {
+        await this.saveOrder(order, userId);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      throw error;
+    }
   }
 }
 

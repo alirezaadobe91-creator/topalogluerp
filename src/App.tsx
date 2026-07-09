@@ -24,10 +24,12 @@ import { OrderDetailPanel } from './components/OrderDetailPanel';
 import { DashboardCharts } from './components/DashboardCharts';
 import { isToday, format } from 'date-fns';
 import { clsx } from 'clsx';
+import { useAuth } from './hooks/useAuth';
+import { AuthScreen } from './components/AuthScreen';
 import { AlertCircle } from 'lucide-react';
 
 export default function App() {
-  const user = { uid: 'local-user', displayName: 'Yerel Kullanıcı' };
+  const { user, loading: authLoading, signOut } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('HEPSİ');
@@ -40,6 +42,7 @@ export default function App() {
 
   // Load Initial Data
   useEffect(() => {
+    if (!user) return;
     const init = async () => {
       try {
         const data = await dbService.getAllOrders(user.uid);
@@ -53,7 +56,7 @@ export default function App() {
       }
     };
     init();
-  }, []);
+  }, [user]);
 
   // Force Light Theme
   useEffect(() => {
@@ -126,12 +129,16 @@ export default function App() {
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [orders, searchQuery, statusFilter, erpFilter, marketplaceFilter]);
 
-  if (!isInitialized) {
+  if (authLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-gold" />
       </div>
     );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
   }
 
   // Actions
@@ -231,8 +238,6 @@ export default function App() {
     }
   };
 
-  if (!isInitialized) return null;
-
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 selection:bg-gold/30">
       {/* Header */}
@@ -257,9 +262,16 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end mr-2 hidden sm:flex">
-              <span className="text-[10px] font-black text-slate-900 tracking-tight uppercase">{user.displayName}</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">YEREL MOD</span>
+              <span className="text-[10px] font-black text-slate-900 tracking-tight uppercase">{user?.displayName || 'Kullanıcı'}</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{user?.email}</span>
             </div>
+            <button 
+              onClick={() => signOut()}
+              className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100 mr-2"
+              title="Çıkış Yap"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
             <div className="relative group hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 

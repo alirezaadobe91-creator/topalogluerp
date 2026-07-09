@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Order validation
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'customerName', 'orderNumber', 'marketplace', 'status', 'userId']) &&
+             data.keys().size() <= 20 && // Allow some optional fields
+             data.id is string && data.id.size() <= 128 &&
+             data.customerName is string && data.customerName.size() <= 256 &&
+             data.orderNumber is string && data.orderNumber.size() <= 128 &&
+             data.marketplace is string && data.marketplace.size() <= 64 &&
+             data.status is string && data.status.size() <= 32 &&
+             data.userId == request.auth.uid;
+    }
+
+    match /orders/{orderId} {
+      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming()) && incoming().id == orderId;
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidOrder(incoming()) && existing().userId == request.auth.uid && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}
